@@ -3,8 +3,22 @@
         "default": "Ошибка валидации",
         "required": "Поле не должно быть пустым",
         "invalidUrl": "Ссылка должна быть валидным URL",
-        "duplicate": "RSS уже существует",
+        "duplicate": "RSS уже существует"
+    },
+    "loader": {
+        "rssSuccess": "RSS успешно загружен",
         "invalidRss": "Ресурс не содержит валидный RSS",
         "invalidChannel": "Некорректный RSS: отсутствует элемент channel"
+    },
+    "posts": {
+        "header": "Посты",
+        "button": "Просмотр"
+    },
+    "feeds": {
+        "header": "Фиды"
+    },
+    "modal": {
+        "read": "Читать полностью",
+        "close": "Закрыть"
     }
 }
