@@ -1,5 +1,5 @@
 {
-    "errors": {
+    "formErrors": {
         "default": "Ошибка валидации",
         "required": "Поле не должно быть пустым",
         "invalidUrl": "Ссылка должна быть валидным URL",
@@ -7,8 +7,11 @@
     },
     "loader": {
         "rssSuccess": "RSS успешно загружен",
-        "invalidRss": "Ресурс не содержит валидный RSS",
-        "invalidChannel": "Некорректный RSS: отсутствует элемент channel"
+        "invalidRss": "Ресурс не содержит валидный RSS"
+    },
+    "parser": {
+        "commonError": "Ошибка парсинга XML",
+        "incorrectRss": "Некорректный RSS: отсутствует <channel>"
     },
     "posts": {
         "header": "Посты",
