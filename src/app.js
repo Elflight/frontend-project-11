@@ -41,7 +41,8 @@ export default () => {
 
     const loadingStates = {
         BASE: "base",
-        LOADING: "loading"
+        LOADING: "loading",
+        ERROR: "error"
     };
 
     let feedID = 0;
