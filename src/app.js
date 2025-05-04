@@ -5,6 +5,7 @@ import * as yup from 'yup';
 import axios from 'axios';
 import {renderForm, renderContent} from './view.js';
 import parseRss from './parser.js';
+// import { validate } from 'webpack';
 
 export default () => {
     i18next.init({
@@ -45,7 +46,7 @@ export default () => {
         ERROR: "error"
     };
 
-    let feedID = 0;
+    const updatePeriod = 5000;
 
     const state = {
         form: {
@@ -62,9 +63,11 @@ export default () => {
     };
 
     const watchedState = onChange(state, function (path, value, previousValue, applyData) {
+        console.log('state', watchedState.posts);
         if(path.startsWith("form")) {
             renderForm(watchedState.form, pageElements, formStates);
-        } else if(path === 'feeds') {
+        } else if(path === 'feeds' || path.startsWith("posts")) {
+            console.log('render');
             renderContent(watchedState.feeds, watchedState.posts, i18next, pageElements);
         }
     });
@@ -74,18 +77,10 @@ export default () => {
         watchedState.form.state = formStates.LOADING;
 
         const url = pageElements.formInput.value.trim();
-
-        const test = watchedState.feeds.map((feed) => feed.url);
-        console.log(watchedState.feeds);
-        console.log('test', test);
-        console.log('url', url);
         
-        const rssFieldSchema = yup.string()
-        .required()
-        .url()
-        .notOneOf(watchedState.feeds.map((feed) => feed.url));
+        const feedsUrls = watchedState.feeds.map((feed) => feed.url);
 
-        rssFieldSchema.validate(url) //валидируем адрес
+        validate(url, feedsUrls)
         .then(() => { //загружаем данные
             watchedState.form = { ...watchedState.form, isValid: true, error: ""};
             return getFeedData(url);
@@ -106,13 +101,17 @@ export default () => {
             watchedState.form.state = formStates.BASE;
             watchedState.loadingProcess.status = loadingStates.BASE;
 
-            const currentFeedID = ++feedID;
-            watchedState.posts['feed'+currentFeedID] = parsedRss.posts;
+            const currentFeedID = getId();
+            watchedState.posts[currentFeedID] = parsedRss.posts;
             watchedState.feeds.push({...parsedRss.feed, id: currentFeedID, url});
-            // console.log(watchedState);
+
+            //первый запуск автообновления
+            setTimeout(() => {
+                updateFeed(currentFeedID);
+            }, updatePeriod);
         })
         .catch((err) => {
-            watchedState.form = { ...watchedState.form, isValid: false, error: err.message, state: formStates.BASE};
+            watchedState.form = {isValid: false, error: err.message, state: formStates.BASE};
         })
         // .finally(() => {
         //     watchedState.form.state = formStates.BASE;
@@ -120,11 +119,21 @@ export default () => {
         // });
     });
 
-    //получаем проксированный адрес и делаем запрос
+    //валидируем адрес фида
+    const validate = (str, urls) => {
+        const rssFieldSchema = yup.string()
+        .required()
+        .url()
+        .notOneOf(urls);
+        
+        return rssFieldSchema.validate(str);
+    }
+
+    // делаем запрос
     const getFeedData = (url) => {
         watchedState.loadingProcess.status = loadingStates.LOADING;
 
-        const proxedUrl =`https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}`;
+        const proxedUrl = prepareUrl(url);
 
         //загружаем содержимое
         return axios.get(proxedUrl)
@@ -137,6 +146,11 @@ export default () => {
             });
     };
 
+    //получаем проксированный адрес и добавляем параметр для избежания кеширования
+    const prepareUrl = (url) => {
+        return `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+    }
+
     //проверяем, что получен именно RSS и возвращаем именно тело
     const getRss = (feedData) => {
         return new Promise((resolve, reject) => {
@@ -148,4 +162,38 @@ export default () => {
           }
         });
     };
+
+    let feedID = 0;
+    const getId = () => {
+        const idPrefix = 'feed';
+        return `${idPrefix}${++feedID}`;
+    }
+
+    const updateFeed = (feedID) => {
+        console.log('updateFeed', feedID);
+        // получаем фид, интересует его URL
+        const {url} = watchedState.feeds.find((feed) => feed.id === feedID);
+        // загружаем содержимое
+        getFeedData(url)
+        .then((feedData) => { //проверяем корректность
+            return getRss(feedData);
+        })
+        .then((rawRss) => { //парсим
+            return parseRss(rawRss)
+        })
+        .then((parsedRss) => { //сравниваем и актуализируем посты
+            if(parsedRss.posts) {
+                // получаем массив постов из стейта
+                // сравниваем массивы постов и получаем массив новых постов
+                // добавляем массив новых постов к изначальному массиву постов
+                const oldPostsGuids = new Set(watchedState.posts[feedID].map(item => item.guid));
+                const addedPosts = parsedRss.posts.filter(item => !oldPostsGuids.has(item.guid));
+                watchedState.posts[feedID] = [...watchedState.posts[feedID], ...addedPosts];
+            }
+            // запускаем эту функцию на таймере после успешной загрузки фида
+            setTimeout(() => {
+                updateFeed(feedID);
+            }, updatePeriod);
+        });
+    }
 }
