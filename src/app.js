@@ -3,7 +3,7 @@ import * as i18next from 'i18next';
 import ruTranslation from './locales/ru.json';
 import * as yup from 'yup';
 import axios from 'axios';
-import {renderForm, renderContent} from './view.js';
+import {initModal, renderForm, renderContent, markVisitedPosts} from './view.js';
 import parseRss from './parser.js';
 // import { validate } from 'webpack';
 
@@ -35,6 +35,8 @@ export default () => {
         main: document.querySelector('main'),
     };
 
+    pageElements.modal = initModal(i18next);
+
     const formStates = {
         BASE: "base",
         LOADING: "loading"
@@ -59,7 +61,10 @@ export default () => {
             error: "",
         },
         feeds: [],
-        posts: {}
+        posts: {},
+        ui: {
+            visitedPosts: new Set()
+        }
     };
 
     const watchedState = onChange(state, function (path, value, previousValue, applyData) {
@@ -67,8 +72,9 @@ export default () => {
         if(path.startsWith("form")) {
             renderForm(watchedState.form, pageElements, formStates);
         } else if(path === 'feeds' || path.startsWith("posts")) {
-            console.log('render');
-            renderContent(watchedState.feeds, watchedState.posts, i18next, pageElements);
+            renderContent(watchedState.feeds, watchedState.posts, watchedState.ui.visitedPosts, i18next, pageElements);
+        } else if(path == 'ui.visitedPosts') {
+            markVisitedPosts(watchedState.ui.visitedPosts);
         }
     });
 
@@ -196,4 +202,31 @@ export default () => {
             }, updatePeriod);
         });
     }
+
+    //при вызове модалки подменяем контент
+    pageElements.modal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const feedID = button.getAttribute('data-feed-id');
+        const postID = button.getAttribute('data-id');
+        
+        const post = watchedState.posts[feedID].find((post) => post.guid === postID);
+
+        pageElements.modal.querySelector('.modal-title').textContent = post.title;
+        pageElements.modal.querySelector('.modal-body').textContent = post.description;
+
+        pageElements.modal.querySelector('.btn-primary').href = post.link;
+
+        watchedState.ui.visitedPosts.add(post.guid);
+    });
+
+    //при клике на ссылку помечаем её как прочитанную
+    pageElements.main.addEventListener('click', function (event) {
+        if (event.target.matches('.list-group-item>a')) {
+            const post = event.target;
+            const postID = post.getAttribute('data-id');
+            if(postID) {
+                watchedState.ui.visitedPosts.add(postID);
+            }
+        }
+    });
 }

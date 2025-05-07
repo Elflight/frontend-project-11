@@ -22,7 +22,7 @@ const renderForm = (formstate, pageElements, formStates) => {
     pageElements.errField.classList.add('text-danger');
 };
 
-const renderContent = (feeds, posts, i18next, pageElements) => {
+const renderContent = (feeds, posts, visitedPostIDs, i18next, pageElements) => {
     const contentWrapper = document.querySelector('#contentWrapper');
     if(contentWrapper) {
         contentWrapper.remove();
@@ -37,9 +37,13 @@ const renderContent = (feeds, posts, i18next, pageElements) => {
    
     Object.entries(posts).forEach(([feedKey, feedPosts]) => {
         feedPosts.forEach((feedPost, index) => {
+            let linkClass = "fw-bold";
+            if(visitedPostIDs.has(feedPost.guid)) {
+                linkClass = "fw-normal link-secondary";
+            }
             html += `<li class="list-group-item d-flex justify-content-between align-items-start border-0 border-end-0">`;
-            html += `<a href="${feedPost.link}" class="fw-bold" data-id="${feedKey}" target="_blank" rel="noopener noreferrer">${feedPost.title}</a>`;
-            html += `<button type="button" class="btn btn-outline-primary btn-sm" data-id="${feedKey}" data-bs-toggle="modal" data-bs-target="#modal">${i18next.t("posts.button")}</button>`;
+            html += `<a href="${feedPost.link}" class="${linkClass}" data-id="${feedPost.guid}" target="_blank" rel="noopener noreferrer">${feedPost.title}</a>`;
+            html += `<button type="button" class="btn btn-outline-primary btn-sm" data-feed-id="${feedKey}"  data-id="${feedPost.guid}" data-bs-toggle="modal" data-bs-target="#modal">${i18next.t("posts.button")}</button>`;
             html += `</li>`;
         });
     });
@@ -65,4 +69,35 @@ const renderContent = (feeds, posts, i18next, pageElements) => {
     pageElements.errField.classList.add('text-success');
 }
 
-export {renderForm, renderContent};
+const initModal = (i18next) => {
+    const modal = `<div class="modal" id="modal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <a class="btn btn-primary full-article" href="" role="button" target="_blank" rel="noopener noreferrer">${i18next.t("modal.read")}</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18next.t('modal.close')}</button>
+            </div>
+          </div>
+        </div>
+    </div>`;
+    document.querySelector('body').insertAdjacentHTML('beforeend', modal);
+    
+    return document.querySelector('#modal');
+}
+
+const markVisitedPosts = (visitedPostIDs) => {
+    for (let postID of visitedPostIDs) {
+        const post = document.querySelector(`.fw-bold[data-id="${postID}"]`);
+        if(post) {
+            post.classList.remove('fw-bold');
+            post.classList.add('fw-normal', 'link-secondary');
+        }
+    }
+}
+
+export {initModal, renderForm, renderContent, markVisitedPosts};
