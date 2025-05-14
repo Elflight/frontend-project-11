@@ -6,6 +6,7 @@
         "duplicate": "RSS уже существует"
     },
     "loader": {
+        "networkError": "Ошибка сети",
         "rssSuccess": "RSS успешно загружен",
         "invalidRss": "Ресурс не содержит валидный RSS"
     },

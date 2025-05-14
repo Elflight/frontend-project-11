@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 /* eslint-disable implicit-arrow-linebreak */
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-plusplus */
@@ -107,6 +108,7 @@ export default () => {
     return axios.get(proxedUrl)
       .then((response) => response) // возвращаем данные, чтобы использовать их потом
       .catch((error) => {
+        error.message = i18next.t('loader.networkError');
         watchedState.loadingProcess.error = error.message;
         throw error; // пробрасываем ошибку выше
       });
