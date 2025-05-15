@@ -116,7 +116,7 @@ export default () => {
 
   // проверяем, что получен именно RSS и возвращаем именно тело
   const getRss = (feedData) => new Promise((resolve, reject) => {
-    const contentType = feedData.data.status.content_type;
+    const contentType = feedData?.data?.status?.content_type;
     if (contentType === 'application/rss+xml; charset=utf-8') {
       resolve(feedData.data.contents); // всё ок — передаём дальше
     } else {
