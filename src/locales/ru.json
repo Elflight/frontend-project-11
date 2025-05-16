@@ -7,12 +7,11 @@
     },
     "loader": {
         "networkError": "Ошибка сети",
-        "rssSuccess": "RSS успешно загружен",
-        "invalidRss": "Ресурс не содержит валидный RSS"
+        "rssSuccess": "RSS успешно загружен"
     },
     "parser": {
         "commonError": "Ошибка парсинга XML",
-        "incorrectRss": "Некорректный RSS: отсутствует <channel>"
+        "incorrectRss": "Ресурс не содержит валидный RSS"
     },
     "posts": {
         "header": "Посты",
