@@ -96,7 +96,7 @@ export default () => {
   };
 
   // получаем проксированный адрес и добавляем параметр для избежания кеширования
-  const prepareUrl = (url) => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+  const prepareUrl = (url) => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`;
 
   // делаем запрос
   const getFeedData = (url) => {
