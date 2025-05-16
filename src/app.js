@@ -106,7 +106,7 @@ export default () => {
 
     // загружаем содержимое
     return axios.get(proxedUrl)
-      .then((response) => response) // возвращаем данные, чтобы использовать их потом
+      .then((response) => response.data.contents) // возвращаем данные, чтобы использовать их потом
       .catch((error) => {
         error.message = i18next.t('loader.networkError');
         watchedState.loadingProcess.error = error.message;
@@ -114,23 +114,12 @@ export default () => {
       });
   };
 
-  // проверяем, что получен именно RSS и возвращаем именно тело
-  const getRss = (feedData) => new Promise((resolve, reject) => {
-    const status = feedData?.data?.status?.http_code;
-    if (true) {
-      resolve(feedData.data.contents); // всё ок — передаём дальше
-    } else {
-      reject(new Error(i18next.t('loader.networkError')));
-    }
-  });
-
   const updateFeed = (updFeedID) => {
     console.log('updateFeed', updFeedID);
     // получаем фид, интересует его URL
     const { url } = watchedState.feeds.find((feed) => feed.id === updFeedID);
     // загружаем содержимое
     getFeedData(url)
-      .then((feedData) => getRss(feedData)) // проверяем корректность
       .then((rawRss) => parseRss(rawRss)) // парсим
       .then((parsedRss) => { // сравниваем и актуализируем посты
         if (parsedRss.posts) {
@@ -167,7 +156,6 @@ export default () => {
         watchedState.form = { ...watchedState.form, isValid: true, error: '' };
         return getFeedData(url);
       })
-      .then((feedData) => getRss(feedData)) // проверяем корректность
       .then((rawRss) => // парсим
         parseRss(rawRss)
           .then((parsedRss) => parsedRss).catch((err) => {
