@@ -1,3 +1,4 @@
+/* eslint-disable no-extra-semi */
 export default (xmlString) => new Promise((resolve, reject) => {
   if (!xmlString) {
     reject(new Error('parser.incorrectRss'));

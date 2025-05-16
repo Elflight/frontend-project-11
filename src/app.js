@@ -2,6 +2,7 @@
 /* eslint-disable implicit-arrow-linebreak */
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-plusplus */
+/* eslint-disable no-extra-semi */
 import onChange from 'on-change';
 import * as i18next from 'i18next';
 import * as yup from 'yup';
@@ -75,7 +76,6 @@ export default () => {
   };
 
   const watchedState = onChange(state, (path) => {
-    console.log('state', watchedState.posts);
     if (path.startsWith('form')) {
       renderForm(watchedState.form, pageElements, formStates);
     } else if (path === 'feeds' || path.startsWith('posts')) {
@@ -115,7 +115,6 @@ export default () => {
   };
 
   const updateFeed = (updFeedID) => {
-    console.log('updateFeed', updFeedID);
     // получаем фид, интересует его URL
     const { url } = watchedState.feeds.find((feed) => feed.id === updFeedID);
     // загружаем содержимое

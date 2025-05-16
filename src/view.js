@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-param-reassign */
+/* eslint-disable no-extra-semi */
 const renderForm = (formstate, pageElements, formStates) => {
   if (formstate.state === formStates.LOADING) {
     pageElements.formInput.disabled = true;
