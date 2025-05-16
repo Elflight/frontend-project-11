@@ -8,7 +8,7 @@ export default (xmlString) => new Promise((resolve, reject) => {
 
   const parserError = xmlDoc.querySelector('parsererror');
   if (parserError) {
-    reject(new Error('parser.commonError'));
+    reject(new Error('parser.incorrectRss'));
   }
 
   const channel = xmlDoc.querySelector('channel');
