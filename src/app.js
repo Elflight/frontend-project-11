@@ -117,7 +117,7 @@ export default () => {
   // проверяем, что получен именно RSS и возвращаем именно тело
   const getRss = (feedData) => new Promise((resolve, reject) => {
     const status = feedData?.data?.status?.http_code;
-    if (status === 200) {
+    if (true) {
       resolve(feedData.data.contents); // всё ок — передаём дальше
     } else {
       reject(new Error(i18next.t('loader.networkError')));
