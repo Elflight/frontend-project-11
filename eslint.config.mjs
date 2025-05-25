@@ -27,7 +27,7 @@ export default [
       '@stylistic/js/semi': ['error', 'never'],
       '@stylistic/js/quotes': ['error', 'single'],
       '@stylistic/js/indent': ['error', 2],
-      '@stylistic/js/arrow-parens': ['error', 'always'],
+      '@stylistic/js/arrow-parens': ['error', 'as-needed'],
     },
   },
 ]
