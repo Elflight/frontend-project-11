@@ -1,9 +1,8 @@
-export default (xmlString) => new Promise((resolve, reject) => {
+export default xmlString => new Promise((resolve, reject) => {
   if (!xmlString) {
     reject(new Error('parser.incorrectRss'))
   }
 
-  // eslint-disable-next-line no-undef
   const parser = new DOMParser()
   const xmlDoc = parser.parseFromString(xmlString, 'application/xml')
 
@@ -25,7 +24,7 @@ export default (xmlString) => new Promise((resolve, reject) => {
   }
 
   // Посты
-  const items = [...channel.querySelectorAll('item')].map((item) => ({
+  const items = [...channel.querySelectorAll('item')].map(item => ({
     title: item.querySelector('title')?.textContent ?? '',
     description: item.querySelector('description')?.textContent ?? '',
     link: item.querySelector('link')?.textContent ?? '',

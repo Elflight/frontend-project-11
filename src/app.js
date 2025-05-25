@@ -70,7 +70,7 @@ export default () => {
     },
   }
 
-  const watchedState = onChange(state, (path) => {
+  const watchedState = onChange(state, path => {
     if (path.startsWith('form')) {
       renderForm(watchedState.form, pageElements, formStates)
     } else if (path === 'feeds' || path.startsWith('posts')) {
@@ -91,41 +91,40 @@ export default () => {
   }
 
   // получаем проксированный адрес и добавляем параметр для избежания кеширования
-  const prepareUrl = (url) => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`
+  const prepareUrl = url => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`
 
   // делаем запрос
-  const getFeedData = (url) => {
+  const getFeedData = url => {
     watchedState.loadingProcess.status = loadingStates.LOADING
 
     const proxedUrl = prepareUrl(url)
 
     // загружаем содержимое
     return axios.get(proxedUrl)
-      .then((response) => response.data.contents) // возвращаем данные, чтобы использовать их потом
-      .catch((error) => {
+      .then(response => response.data.contents) // возвращаем данные, чтобы использовать их потом
+      .catch(error => {
         error.message = i18next.t('loader.networkError')
         watchedState.loadingProcess.error = error.message
         throw error // пробрасываем ошибку выше
       })
   }
 
-  const updateFeed = (updFeedID) => {
+  const updateFeed = updFeedID => {
     // получаем фид, интересует его URL
-    const { url } = watchedState.feeds.find((feed) => feed.id === updFeedID)
+    const { url } = watchedState.feeds.find(feed => feed.id === updFeedID)
     // загружаем содержимое
     getFeedData(url)
-      .then((rawRss) => parseRss(rawRss)) // парсим
-      .then((parsedRss) => { // сравниваем и актуализируем посты
+      .then(rawRss => parseRss(rawRss)) // парсим
+      .then(parsedRss => { // сравниваем и актуализируем посты
         if (parsedRss.posts) {
           // получаем массив постов из стейта
           // сравниваем массивы постов и получаем массив новых постов
           // добавляем массив новых постов к изначальному массиву постов
-          const oldPostsGuids = new Set(watchedState.posts[updFeedID].map((item) => item.guid))
-          const addedPosts = parsedRss.posts.filter((item) => !oldPostsGuids.has(item.guid))
+          const oldPostsGuids = new Set(watchedState.posts[updFeedID].map(item => item.guid))
+          const addedPosts = parsedRss.posts.filter(item => !oldPostsGuids.has(item.guid))
           watchedState.posts[updFeedID] = [...watchedState.posts[updFeedID], ...addedPosts]
         }
         // запускаем эту функцию на таймере после успешной загрузки фида
-        // eslint-disable-next-line no-undef
         setTimeout(() => {
           updateFeed(updFeedID)
         }, updatePeriod)
@@ -138,28 +137,28 @@ export default () => {
     return `${idPrefix}${++feedID}`
   }
 
-  pageElements.form.addEventListener('submit', (event) => {
+  pageElements.form.addEventListener('submit', event => {
     event.preventDefault()
     watchedState.form.state = formStates.LOADING
 
     const url = pageElements.formInput.value.trim()
 
-    const feedsUrls = watchedState.feeds.map((feed) => feed.url)
+    const feedsUrls = watchedState.feeds.map(feed => feed.url)
 
     validate(url, feedsUrls)
       .then(() => { // загружаем данные
         watchedState.form = { ...watchedState.form, isValid: true, error: '' }
         return getFeedData(url)
       })
-      .then((rawRss) => // парсим
+      .then(rawRss => // парсим
         parseRss(rawRss)
-          .then((parsedRss) => parsedRss).catch((err) => {
+          .then(parsedRss => parsedRss).catch(err => {
             // пришлось обернуть в отдельный блок,
             // чтобы перехватить ошибку из парсера и обработать её через i18n
             err.message = i18next.t(err.message)
             throw err
           }))
-      .then((parsedRss) => { // записываем данные в state
+      .then(parsedRss => { // записываем данные в state
         watchedState.form.state = formStates.BASE
         watchedState.loadingProcess.status = loadingStates.BASE
 
@@ -168,12 +167,11 @@ export default () => {
         watchedState.feeds.push({ ...parsedRss.feed, id: currentFeedID, url })
 
         // первый запуск автообновления
-        // eslint-disable-next-line no-undef
         setTimeout(() => {
           updateFeed(currentFeedID)
         }, updatePeriod)
       })
-      .catch((err) => {
+      .catch(err => {
         watchedState.form = { isValid: false, error: err.message, state: formStates.BASE }
       })
     // .finally(() => {
@@ -183,12 +181,12 @@ export default () => {
   })
 
   // при вызове модалки подменяем контент
-  pageElements.modal.addEventListener('show.bs.modal', (event) => {
+  pageElements.modal.addEventListener('show.bs.modal', event => {
     const button = event.relatedTarget
     const cFeedID = button.getAttribute('data-feed-id')
     const postID = button.getAttribute('data-id')
 
-    const post = watchedState.posts[cFeedID].find((cPost) => cPost.guid === postID)
+    const post = watchedState.posts[cFeedID].find(cPost => cPost.guid === postID)
 
     pageElements.modal.querySelector('.modal-title').textContent = post.title
     pageElements.modal.querySelector('.modal-body').textContent = post.description
@@ -199,7 +197,7 @@ export default () => {
   })
 
   // при клике на ссылку помечаем её как прочитанную
-  pageElements.main.addEventListener('click', (event) => {
+  pageElements.main.addEventListener('click', event => {
     if (event.target.matches('.list-group-item>a')) {
       const post = event.target
       const postID = post.getAttribute('data-id')

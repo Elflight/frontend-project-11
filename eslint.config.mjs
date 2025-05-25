@@ -17,8 +17,14 @@ export default [
         window: 'readonly',
         document: 'readonly',
       },
+      env: {
+        browser: true,
+        es2021: true
+      }
     },
     rules: {
+      'brace-style': ['error', '1tbs', { allowSingleLine: false }],
+      'arrow-parens': ['error', 'as-needed'],
       'no-extra-semi': 'off',
       '@stylistic/js/semi': ['error', 'never'],
       '@stylistic/js/quotes': ['error', 'single'],

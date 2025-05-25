@@ -39,7 +39,7 @@ const renderContent = (watchedState, i18next, pageElements) => {
                     <ul class="list-group border-0 rounded-0">`
 
   Object.entries(posts).forEach(([feedKey, feedPosts]) => {
-    feedPosts.forEach((feedPost) => {
+    feedPosts.forEach(feedPost => {
       let linkClass = 'fw-bold'
       if (visitedPostIDs.has(feedPost.guid)) {
         linkClass = 'fw-normal link-secondary'
@@ -56,7 +56,7 @@ const renderContent = (watchedState, i18next, pageElements) => {
                 <div class="card border-0">
                     <div class="card-body"><h2 class="card-title h4">${i18next.t('feeds.header')}</h2></div>
                     <ul class="list-group border-0 rounded-0">`
-  feeds.forEach((objFeed) => {
+  feeds.forEach(objFeed => {
     html += `<li class="list-group-item border-0 border-end-0">
                     <h3 class="h6 m-0">${objFeed.title}</h3>
                     <p class="m-0 small text-black-50">${objFeed.description}</p>
@@ -72,7 +72,7 @@ const renderContent = (watchedState, i18next, pageElements) => {
   pageElements.errField.classList.add('text-success')
 }
 
-const initModal = (i18next) => {
+const initModal = i18next => {
   const modal = `<div class="modal" id="modal" tabindex="-1">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -93,7 +93,7 @@ const initModal = (i18next) => {
   return document.querySelector('#modal')
 }
 
-const markVisitedPosts = (visitedPostIDs) => {
+const markVisitedPosts = visitedPostIDs => {
   for (const postID of visitedPostIDs) {
     const post = document.querySelector(`.fw-bold[data-id="${postID}"]`)
     if (post) {
