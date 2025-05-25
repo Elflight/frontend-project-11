@@ -1,33 +1,26 @@
 import js from '@eslint/js'
-import stylistic from '@stylistic/eslint-plugin-js'
+import globals from 'globals'
+import stylistic from '@stylistic/eslint-plugin'
+import { defineConfig } from 'eslint/config'
 
-export default [
-  js.configs.recommended,
+export default defineConfig([
+  // Подключение полной стилистики
+  stylistic.configs.recommended,
+
+  // Базовые правила JS от ESLint
   {
-    ignores: [
-      'webpack.config.js',
-    ],
-    plugins: {
-      '@stylistic/js': stylistic,
-    },
+    files: ['**/*.{js,mjs,cjs}'],
+    plugins: { js },
+    extends: ['js/recommended'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
-        window: 'readonly',
-        document: 'readonly',
+        ...globals.browser,
         DOMParser: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
       },
     },
-    rules: {
-      'brace-style': ['error', 'stroustrup', { allowSingleLine: false }],
-      'no-extra-semi': 'off',
-      '@stylistic/js/semi': ['error', 'never'],
-      '@stylistic/js/quotes': ['error', 'single'],
-      '@stylistic/js/indent': ['error', 2],
-      '@stylistic/js/arrow-parens': ['error', 'as-needed'],
-    },
   },
-]
+])

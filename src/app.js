@@ -70,7 +70,7 @@ export default () => {
     },
   }
 
-  const watchedState = onChange(state, path => {
+  const watchedState = onChange(state, (path) => {
     if (path.startsWith('form')) {
       renderForm(watchedState.form, pageElements, formStates)
     }
@@ -96,7 +96,7 @@ export default () => {
   const prepareUrl = url => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`
 
   // делаем запрос
-  const getFeedData = url => {
+  const getFeedData = (url) => {
     watchedState.loadingProcess.status = loadingStates.LOADING
 
     const proxedUrl = prepareUrl(url)
@@ -104,20 +104,20 @@ export default () => {
     // загружаем содержимое
     return axios.get(proxedUrl)
       .then(response => response.data.contents) // возвращаем данные, чтобы использовать их потом
-      .catch(error => {
+      .catch((error) => {
         error.message = i18next.t('loader.networkError')
         watchedState.loadingProcess.error = error.message
         throw error // пробрасываем ошибку выше
       })
   }
 
-  const updateFeed = updFeedID => {
+  const updateFeed = (updFeedID) => {
     // получаем фид, интересует его URL
     const { url } = watchedState.feeds.find(feed => feed.id === updFeedID)
     // загружаем содержимое
     getFeedData(url)
       .then(rawRss => parseRss(rawRss)) // парсим
-      .then(parsedRss => { // сравниваем и актуализируем посты
+      .then((parsedRss) => { // сравниваем и актуализируем посты
         if (parsedRss.posts) {
           // получаем массив постов из стейта
           // сравниваем массивы постов и получаем массив новых постов
@@ -139,7 +139,7 @@ export default () => {
     return `${idPrefix}${++feedID}`
   }
 
-  pageElements.form.addEventListener('submit', event => {
+  pageElements.form.addEventListener('submit', (event) => {
     event.preventDefault()
     watchedState.form.state = formStates.LOADING
 
@@ -154,13 +154,13 @@ export default () => {
       })
       .then(rawRss => // парсим
         parseRss(rawRss)
-          .then(parsedRss => parsedRss).catch(err => {
+          .then(parsedRss => parsedRss).catch((err) => {
             // пришлось обернуть в отдельный блок,
             // чтобы перехватить ошибку из парсера и обработать её через i18n
             err.message = i18next.t(err.message)
             throw err
           }))
-      .then(parsedRss => { // записываем данные в state
+      .then((parsedRss) => { // записываем данные в state
         watchedState.form.state = formStates.BASE
         watchedState.loadingProcess.status = loadingStates.BASE
 
@@ -173,7 +173,7 @@ export default () => {
           updateFeed(currentFeedID)
         }, updatePeriod)
       })
-      .catch(err => {
+      .catch((err) => {
         watchedState.form = { isValid: false, error: err.message, state: formStates.BASE }
       })
     // .finally(() => {
@@ -183,7 +183,7 @@ export default () => {
   })
 
   // при вызове модалки подменяем контент
-  pageElements.modal.addEventListener('show.bs.modal', event => {
+  pageElements.modal.addEventListener('show.bs.modal', (event) => {
     const button = event.relatedTarget
     const cFeedID = button.getAttribute('data-feed-id')
     const postID = button.getAttribute('data-id')
@@ -199,7 +199,7 @@ export default () => {
   })
 
   // при клике на ссылку помечаем её как прочитанную
-  pageElements.main.addEventListener('click', event => {
+  pageElements.main.addEventListener('click', (event) => {
     if (event.target.matches('.list-group-item>a')) {
       const post = event.target
       const postID = post.getAttribute('data-id')
