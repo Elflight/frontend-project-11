@@ -16,19 +16,18 @@ export default [
       globals: {
         window: 'readonly',
         document: 'readonly',
+        DOMParser: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
-      env: {
-        browser: true,
-        es2021: true
-      }
     },
     rules: {
-      'brace-style': ['error', '1tbs', { allowSingleLine: false }],
-      'arrow-parens': ['error', 'as-needed'],
+      'brace-style': ['error', 'stroustrup', { allowSingleLine: false }],
       'no-extra-semi': 'off',
       '@stylistic/js/semi': ['error', 'never'],
       '@stylistic/js/quotes': ['error', 'single'],
       '@stylistic/js/indent': ['error', 2],
+      '@stylistic/js/arrow-parens': ['error', 'always'],
     },
   },
 ]
