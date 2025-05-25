@@ -1,20 +1,20 @@
-/* eslint-disable no-extra-semi */
 export default (xmlString) => new Promise((resolve, reject) => {
   if (!xmlString) {
-    reject(new Error('parser.incorrectRss'));
+    reject(new Error('parser.incorrectRss'))
   }
 
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
+  // eslint-disable-next-line no-undef
+  const parser = new DOMParser()
+  const xmlDoc = parser.parseFromString(xmlString, 'application/xml')
 
-  const parserError = xmlDoc.querySelector('parsererror');
+  const parserError = xmlDoc.querySelector('parsererror')
   if (parserError) {
-    reject(new Error('parser.incorrectRss'));
+    reject(new Error('parser.incorrectRss'))
   }
 
-  const channel = xmlDoc.querySelector('channel');
+  const channel = xmlDoc.querySelector('channel')
   if (!channel) {
-    reject(new Error('parser.incorrectRss'));
+    reject(new Error('parser.incorrectRss'))
   }
 
   // Общая информация о фиде
@@ -22,7 +22,7 @@ export default (xmlString) => new Promise((resolve, reject) => {
     title: channel.querySelector('title')?.textContent ?? '',
     description: channel.querySelector('description')?.textContent ?? '',
     link: channel.querySelector('link')?.textContent ?? '',
-  };
+  }
 
   // Посты
   const items = [...channel.querySelectorAll('item')].map((item) => ({
@@ -32,7 +32,7 @@ export default (xmlString) => new Promise((resolve, reject) => {
     guid: item.querySelector('guid')?.textContent ?? '',
     pubDate: item.querySelector('pubDate')?.textContent ?? '',
     creator: item.querySelector('dc\\:creator, creator')?.textContent ?? '',
-  }));
+  }))
 
-  resolve({ feed, posts: items });
-});
+  resolve({ feed, posts: items })
+})
