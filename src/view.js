@@ -1,5 +1,5 @@
-const renderForm = (formstate, pageElements, formStates) => {
-  if (formstate.state === formStates.LOADING) {
+const renderForm = (formstate, pageElements, FORM_STATES) => {
+  if (formstate.state === FORM_STATES.LOADING) {
     pageElements.formInput.disabled = true
     pageElements.formBtn.disabled = true
   }

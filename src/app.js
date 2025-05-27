@@ -8,6 +8,19 @@ import {
 } from './view.js'
 import parseRss from './parser.js'
 
+const FORM_STATES = {
+  BASE: 'base',
+  LOADING: 'loading',
+}
+
+const LOADING_STATES = {
+  BASE: 'base',
+  LOADING: 'loading',
+  ERROR: 'error',
+}
+
+const UPDATE_PERIOD = 5000
+
 export default () => {
   i18next.init({
     lng: 'ru',
@@ -40,22 +53,9 @@ export default () => {
 
   pageElements.modal = initModal(i18next)
 
-  const formStates = {
-    BASE: 'base',
-    LOADING: 'loading',
-  }
-
-  const loadingStates = {
-    BASE: 'base',
-    LOADING: 'loading',
-    ERROR: 'error',
-  }
-
-  const updatePeriod = 5000
-
   const state = {
     form: {
-      state: formStates.BASE,
+      state: FORM_STATES.BASE,
       isValid: true,
       error: '',
     },
@@ -72,7 +72,7 @@ export default () => {
 
   const watchedState = onChange(state, (path) => {
     if (path.startsWith('form')) {
-      renderForm(watchedState.form, pageElements, formStates)
+      renderForm(watchedState.form, pageElements, FORM_STATES)
     }
     else if (path === 'feeds' || path.startsWith('posts')) {
       renderContent(watchedState, i18next, pageElements)
@@ -97,7 +97,7 @@ export default () => {
 
   // делаем запрос
   const getFeedData = (url) => {
-    watchedState.loadingProcess.status = loadingStates.LOADING
+    watchedState.loadingProcess.status = LOADING_STATES.LOADING
 
     const proxedUrl = prepareUrl(url)
 
@@ -126,10 +126,12 @@ export default () => {
           const addedPosts = parsedRss.posts.filter(item => !oldPostsGuids.has(item.guid))
           watchedState.posts[updFeedID] = [...watchedState.posts[updFeedID], ...addedPosts]
         }
-        // запускаем эту функцию на таймере после успешной загрузки фида
+      })
+      .finally(() => {
+        // запускаем эту функцию на таймере после попытки загрузки фида
         setTimeout(() => {
           updateFeed(updFeedID)
-        }, updatePeriod)
+        }, UPDATE_PERIOD)
       })
   }
 
@@ -141,7 +143,7 @@ export default () => {
 
   pageElements.form.addEventListener('submit', (event) => {
     event.preventDefault()
-    watchedState.form.state = formStates.LOADING
+    watchedState.form.state = FORM_STATES.LOADING
 
     const url = pageElements.formInput.value.trim()
 
@@ -161,8 +163,8 @@ export default () => {
             throw err
           }))
       .then((parsedRss) => { // записываем данные в state
-        watchedState.form.state = formStates.BASE
-        watchedState.loadingProcess.status = loadingStates.BASE
+        watchedState.form.state = FORM_STATES.BASE
+        watchedState.loadingProcess.status = LOADING_STATES.BASE
 
         const currentFeedID = getId()
         watchedState.posts[currentFeedID] = parsedRss.posts
@@ -171,14 +173,14 @@ export default () => {
         // первый запуск автообновления
         setTimeout(() => {
           updateFeed(currentFeedID)
-        }, updatePeriod)
+        }, UPDATE_PERIOD)
       })
       .catch((err) => {
-        watchedState.form = { isValid: false, error: err.message, state: formStates.BASE }
+        watchedState.form = { isValid: false, error: err.message, state: FORM_STATES.BASE }
       })
     // .finally(() => {
-    //     watchedState.form.state = formStates.BASE;
-    //     watchedState.loadingProcess.status = loadingStates.BASE;
+    //     watchedState.form.state = FORM_STATES.BASE;
+    //     watchedState.loadingProcess.status = LOADING_STATES.BASE;
     // });
   })
 
