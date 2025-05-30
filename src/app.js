@@ -1,10 +1,9 @@
-import onChange from 'on-change'
 import * as i18next from 'i18next'
 import * as yup from 'yup'
 import axios from 'axios'
 import ruTranslation from './locales/ru.json'
 import {
-  initModal, renderForm, renderContent, markVisitedPosts,
+  initModal, watchState,
 } from './view.js'
 import parseRss from './parser.js'
 
@@ -30,184 +29,165 @@ export default () => {
         translation: ruTranslation,
       },
     },
-  })
+  }).then(() => {
+    yup.setLocale({
+      mixed: {
+        default: () => i18next.t('formErrors.default'),
+        required: () => i18next.t('formErrors.required'),
+        notOneOf: () => i18next.t('formErrors.duplicate'),
+      },
+      string: {
+        url: () => i18next.t('formErrors.invalidUrl'),
+      },
+    })
 
-  yup.setLocale({
-    mixed: {
-      default: () => i18next.t('formErrors.default'),
-      required: () => i18next.t('formErrors.required'),
-      notOneOf: () => i18next.t('formErrors.duplicate'),
-    },
-    string: {
-      url: () => i18next.t('formErrors.invalidUrl'),
-    },
-  })
-
-  const pageElements = {
-    form: document.querySelector('.rss-form'),
-    formInput: document.querySelector('#url-input'),
-    formBtn: document.querySelector('.rss-form button[type="submit"]'),
-    errField: document.querySelector('.feedback'),
-    main: document.querySelector('main'),
-  }
-
-  pageElements.modal = initModal(i18next)
-
-  const state = {
-    form: {
-      state: FORM_STATES.BASE,
-      isValid: true,
-      error: '',
-    },
-    loadingProcess: {
-      status: '',
-      error: '',
-    },
-    feeds: [],
-    posts: {},
-    ui: {
-      visitedPosts: new Set(),
-    },
-  }
-
-  const watchedState = onChange(state, (path) => {
-    if (path.startsWith('form')) {
-      renderForm(watchedState.form, pageElements, FORM_STATES)
+    const pageElements = {
+      form: document.querySelector('.rss-form'),
+      formInput: document.querySelector('#url-input'),
+      formBtn: document.querySelector('.rss-form button[type="submit"]'),
+      errField: document.querySelector('.feedback'),
+      main: document.querySelector('main'),
     }
-    else if (path === 'feeds' || path.startsWith('posts')) {
-      renderContent(watchedState, i18next, pageElements)
+
+    pageElements.modal = initModal(i18next)
+
+    const state = {
+      form: {
+        state: FORM_STATES.BASE,
+        isValid: true,
+        error: '',
+      },
+      loadingProcess: {
+        status: '',
+        error: '',
+      },
+      feeds: [],
+      posts: {},
+      ui: {
+        visitedPosts: new Set(),
+      },
     }
-    else if (path === 'ui.visitedPosts') {
-      markVisitedPosts(watchedState.ui.visitedPosts)
+
+    const watchedState = watchState(state, pageElements, i18next, FORM_STATES)
+    console.log('watchedState', watchedState)
+
+    // валидируем адрес фида
+    const validate = (str, urls) => {
+      const rssFieldSchema = yup.string()
+        .required()
+        .url()
+        .notOneOf(urls)
+
+      return rssFieldSchema.validate(str)
     }
-  })
 
-  // валидируем адрес фида
-  const validate = (str, urls) => {
-    const rssFieldSchema = yup.string()
-      .required()
-      .url()
-      .notOneOf(urls)
+    const loadRss = (parsedRss, url) => {
+      watchedState.form.state = FORM_STATES.BASE
+      watchedState.loadingProcess.status = LOADING_STATES.BASE
 
-    return rssFieldSchema.validate(str)
-  }
+      const currentFeedID = getId()
+      watchedState.posts[currentFeedID] = parsedRss.posts
+      watchedState.feeds.push({ ...parsedRss.feed, id: currentFeedID, url })
 
-  // получаем проксированный адрес и добавляем параметр для избежания кеширования
-  const prepareUrl = url => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`
+      // запускаем автообновление для этого фида
+      setTimeout(() => {
+        updateFeed(currentFeedID, watchedState)
+      }, UPDATE_PERIOD)
+    }
 
-  // делаем запрос
-  const getFeedData = (url) => {
-    watchedState.loadingProcess.status = LOADING_STATES.LOADING
+    pageElements.form.addEventListener('submit', (event) => {
+      event.preventDefault()
+      watchedState.form.state = FORM_STATES.LOADING
 
-    const proxedUrl = prepareUrl(url)
+      const url = pageElements.formInput.value.trim()
 
-    // загружаем содержимое
-    return axios.get(proxedUrl)
-      .then(response => response.data.contents) // возвращаем данные, чтобы использовать их потом
-      .catch((error) => {
-        error.message = i18next.t('loader.networkError')
-        watchedState.loadingProcess.error = error.message
-        throw error // пробрасываем ошибку выше
-      })
-  }
+      const feedsUrls = watchedState.feeds.map(feed => feed.url)
 
-  const updateFeed = (updFeedID) => {
-    // получаем фид, интересует его URL
-    const { url } = watchedState.feeds.find(feed => feed.id === updFeedID)
-    // загружаем содержимое
-    getFeedData(url)
-      .then(rawRss => parseRss(rawRss)) // парсим
-      .then((parsedRss) => { // сравниваем и актуализируем посты
-        if (parsedRss.posts) {
-          // получаем массив постов из стейта
-          // сравниваем массивы постов и получаем массив новых постов
-          // добавляем массив новых постов к изначальному массиву постов
-          const oldPostsGuids = new Set(watchedState.posts[updFeedID].map(item => item.guid))
-          const addedPosts = parsedRss.posts.filter(item => !oldPostsGuids.has(item.guid))
-          watchedState.posts[updFeedID] = [...watchedState.posts[updFeedID], ...addedPosts]
+      validate(url, feedsUrls)
+        .then(() => { // загружаем данные
+          watchedState.form = { ...watchedState.form, isValid: true, error: '' }
+          return getFeedData(url, watchedState, i18next)
+        })
+        .then(rawRss => // парсим
+          parseRss(rawRss)
+            .then(parsedRss => parsedRss).catch((err) => {
+              // пришлось обернуть в отдельный блок,
+              // чтобы перехватить ошибку из парсера и обработать её через i18n
+              err.message = i18next.t(err.message)
+              throw err
+            }))
+        .then(parsedRss => loadRss(parsedRss, url)) // записываем данные в state
+        .catch((err) => {
+          watchedState.form = { isValid: false, error: err.message, state: FORM_STATES.BASE }
+        })
+      // .finally(() => {
+      //     watchedState.form.state = FORM_STATES.BASE;
+      //     watchedState.loadingProcess.status = LOADING_STATES.BASE;
+      // });
+    })
+
+    // при вызове модалки подменяем контент
+    pageElements.modal.addEventListener('show.bs.modal', (event) => {
+      const button = event.relatedTarget
+      const cFeedID = button.getAttribute('data-feed-id')
+      const postID = button.getAttribute('data-id')
+
+      const post = watchedState.posts[cFeedID].find(cPost => cPost.guid === postID)
+
+      pageElements.modal.querySelector('.modal-title').textContent = post.title
+      pageElements.modal.querySelector('.modal-body').textContent = post.description
+
+      pageElements.modal.querySelector('.btn-primary').href = post.link
+
+      watchedState.ui.visitedPosts.add(post.guid)
+    })
+
+    // при клике на ссылку помечаем её как прочитанную
+    pageElements.main.addEventListener('click', (event) => {
+      if (event.target.matches('.list-group-item>a')) {
+        const post = event.target
+        const postID = post.getAttribute('data-id')
+        if (postID) {
+          watchedState.ui.visitedPosts.add(postID)
         }
-      })
-      .finally(() => {
-        // запускаем эту функцию на таймере после попытки загрузки фида
-        setTimeout(() => {
-          updateFeed(updFeedID)
-        }, UPDATE_PERIOD)
-      })
-  }
-
-  let feedID = 0
-  const getId = () => {
-    const idPrefix = 'feed'
-    return `${idPrefix}${++feedID}`
-  }
-
-  pageElements.form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    watchedState.form.state = FORM_STATES.LOADING
-
-    const url = pageElements.formInput.value.trim()
-
-    const feedsUrls = watchedState.feeds.map(feed => feed.url)
-
-    validate(url, feedsUrls)
-      .then(() => { // загружаем данные
-        watchedState.form = { ...watchedState.form, isValid: true, error: '' }
-        return getFeedData(url)
-      })
-      .then(rawRss => // парсим
-        parseRss(rawRss)
-          .then(parsedRss => parsedRss).catch((err) => {
-            // пришлось обернуть в отдельный блок,
-            // чтобы перехватить ошибку из парсера и обработать её через i18n
-            err.message = i18next.t(err.message)
-            throw err
-          }))
-      .then((parsedRss) => { // записываем данные в state
-        watchedState.form.state = FORM_STATES.BASE
-        watchedState.loadingProcess.status = LOADING_STATES.BASE
-
-        const currentFeedID = getId()
-        watchedState.posts[currentFeedID] = parsedRss.posts
-        watchedState.feeds.push({ ...parsedRss.feed, id: currentFeedID, url })
-
-        // первый запуск автообновления
-        setTimeout(() => {
-          updateFeed(currentFeedID)
-        }, UPDATE_PERIOD)
-      })
-      .catch((err) => {
-        watchedState.form = { isValid: false, error: err.message, state: FORM_STATES.BASE }
-      })
-    // .finally(() => {
-    //     watchedState.form.state = FORM_STATES.BASE;
-    //     watchedState.loadingProcess.status = LOADING_STATES.BASE;
-    // });
-  })
-
-  // при вызове модалки подменяем контент
-  pageElements.modal.addEventListener('show.bs.modal', (event) => {
-    const button = event.relatedTarget
-    const cFeedID = button.getAttribute('data-feed-id')
-    const postID = button.getAttribute('data-id')
-
-    const post = watchedState.posts[cFeedID].find(cPost => cPost.guid === postID)
-
-    pageElements.modal.querySelector('.modal-title').textContent = post.title
-    pageElements.modal.querySelector('.modal-body').textContent = post.description
-
-    pageElements.modal.querySelector('.btn-primary').href = post.link
-
-    watchedState.ui.visitedPosts.add(post.guid)
-  })
-
-  // при клике на ссылку помечаем её как прочитанную
-  pageElements.main.addEventListener('click', (event) => {
-    if (event.target.matches('.list-group-item>a')) {
-      const post = event.target
-      const postID = post.getAttribute('data-id')
-      if (postID) {
-        watchedState.ui.visitedPosts.add(postID)
       }
-    }
+    })
   })
+}
+
+let feedID = 0
+const getId = () => {
+  const idPrefix = 'feed'
+  return `${idPrefix}${++feedID}`
+}
+
+const prepareUrl = url => `https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}&disableCache=true`
+
+const getFeedData = (url, watchedState, i18next) => {
+  watchedState.loadingProcess.status = LOADING_STATES.LOADING
+  const proxedUrl = prepareUrl(url)
+  return axios.get(proxedUrl)
+    .then(response => response.data.contents)
+    .catch((error) => {
+      error.message = i18next.t('loader.networkError')
+      watchedState.loadingProcess.error = error.message
+      throw error
+    })
+}
+
+const updateFeed = (feedID, watchedState) => {
+  const { url } = watchedState.feeds.find(feed => feed.id === feedID)
+  getFeedData(url, watchedState, i18next, LOADING_STATES)
+    .then(raw => parseRss(raw))
+    .then((parsed) => {
+      const oldGuids = new Set(watchedState.posts[feedID].map(p => p.guid))
+      const newPosts = parsed.posts.filter(p => !oldGuids.has(p.guid))
+      watchedState.posts[feedID] = [...watchedState.posts[feedID], ...newPosts]
+    })
+    .catch((err) => {
+      console.warn(`Фоновое обновление фида ${feedID} не удалось:`, err.message)
+    })
+    .finally(() => {
+      setTimeout(() => updateFeed(feedID, watchedState), UPDATE_PERIOD)
+    })
 }
