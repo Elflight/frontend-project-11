@@ -88,11 +88,6 @@ export default () => {
       const currentFeedID = getId()
       watchedState.posts[currentFeedID] = parsedRss.posts
       watchedState.feeds.push({ ...parsedRss.feed, id: currentFeedID, url })
-
-      // запускаем автообновление для этого фида
-      setTimeout(() => {
-        updateFeed(currentFeedID, watchedState)
-      }, UPDATE_PERIOD)
     }
 
     pageElements.form.addEventListener('submit', (event) => {
@@ -152,6 +147,8 @@ export default () => {
         }
       }
     })
+
+    runAutoUpdate(watchedState)
   })
 }
 
@@ -175,19 +172,28 @@ const getFeedData = (url, watchedState, i18next) => {
     })
 }
 
-const updateFeed = (feedID, watchedState) => {
-  const { url } = watchedState.feeds.find(feed => feed.id === feedID)
+const updateFeed = (feed, watchedState) => {
+  const { id, url } = feed
+
   getFeedData(url, watchedState, i18next, LOADING_STATES)
     .then(raw => parseRss(raw))
     .then((parsed) => {
-      const oldGuids = new Set(watchedState.posts[feedID].map(p => p.guid))
+      const oldGuids = new Set(watchedState.posts[id].map(p => p.guid))
       const newPosts = parsed.posts.filter(p => !oldGuids.has(p.guid))
-      watchedState.posts[feedID] = [...watchedState.posts[feedID], ...newPosts]
+      watchedState.posts[id] = [...watchedState.posts[id], ...newPosts]
     })
     .catch((err) => {
-      console.warn(`Фоновое обновление фида ${feedID} не удалось:`, err.message)
+      console.warn(`Фоновое обновление фида ${id} не удалось:`, err.message)
     })
-    .finally(() => {
-      setTimeout(() => updateFeed(feedID, watchedState), UPDATE_PERIOD)
+}
+
+const runAutoUpdate = (watchedState) => {
+  const updateAllFeeds = () => {
+    watchedState.feeds.forEach((feed) => {
+      updateFeed(feed, watchedState)
     })
+    setTimeout(updateAllFeeds, UPDATE_PERIOD)
+  }
+
+  updateAllFeeds()
 }
